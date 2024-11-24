@@ -5,13 +5,13 @@ Non-stationarity is an intrinsic property of real-world time series data and pla
 To address these issues, we first provide a theoretical proof demonstrating the positive correlation between non-stationarity and variance.
 Based on the analysis, we propose a novel lightweight Channel-wise Dynamic Fusion Model (CDFM), which selectively and dynamically recovers intrinsic non-stationarity in raw series while still keeping the predictability of normalized series.
 
-![framework](fig/framework.png)
+![framework](fig/framework.jpg)
 
 We conduct extensive experiments to evaluate the performance and efficiency of our model on seven widely-used real-world time series datasets.
 
 Multivariate forecasting results:
 
-![predictions](fig/predictions.png)
+![predictions](fig/predictions.jpg)
 
 ## Usage
 
