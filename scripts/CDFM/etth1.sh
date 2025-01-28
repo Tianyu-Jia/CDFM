@@ -12,7 +12,7 @@ model_id_name=ETTh1
 data_name=ETTh1
 alpha=0.3
 
-for pred_len in 96 192 336 720 
+for pred_len in 96 
 do
     python -u run_longExp.py \
         --is_training 1 \
@@ -29,5 +29,5 @@ do
         --train_epochs 10\
         --patience 10\
         --alpha $alpha\
-        --itr 1 --batch_size 32 --learning_rate 0.001 >logs/$data_name'_'$seq_len'_'$pred_len.log
+        --itr 1 --batch_size 32 --learning_rate 0.001 >logs/$model_id_name'_'$seq_len'_'$pred_len.log
 done 

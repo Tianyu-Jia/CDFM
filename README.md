@@ -1,13 +1,13 @@
 # CDFM
 
 ## Introduction
-Non-stationarity is an intrinsic property of real-world time series data and plays a crucial role in time series forecasting. However, recent methods that directly apply normalization to input data may result in the loss of essential statistical information, leading to three issues: (1) disrupting global temporal dependencies, (2) ignoring channel-specific differences, and (3) producing over-smoothed predictions.
-To address these issues, we first provide a theoretical proof demonstrating the positive correlation between non-stationarity and variance.
-Based on the analysis, we propose a novel lightweight Channel-wise Dynamic Fusion Model (CDFM), which selectively and dynamically recovers intrinsic non-stationarity in raw series while still keeping the predictability of normalized series.
+Non-stationarity is an intrinsic property of real-world time series and plays a crucial role in time series forecasting. Previous studies primarily adopt instance normalization to attenuate the non-stationarity of original series for better predictability. However, instance normalization that directly removes the inherent non-stationarity can lead to three issues: (1) disrupting global temporal dependencies, (2) ignoring channel-specific differences, and (3) producing over-smoothed predictions.
+To address these issues, we theoretically demonstrate that variance can be a valid and interpretable proxy for quantifying non-stationarity of time series.
+Based on the analysis, we propose a novel lightweight Channel-wise Dynamic Fusion Model (CDFM), which selectively and dynamically recovers intrinsic non-stationarity of the original series, while keeping the predictability of normalized series.
 
 ![framework](fig/framework.jpg)
 
-We conduct extensive experiments to evaluate the performance and efficiency of our model on seven widely-used real-world time series datasets.
+We conduct extensive experiments to evaluate the performance and efficiency of our model on seven widely-used time series datasets.
 
 Multivariate forecasting results:
 

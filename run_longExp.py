@@ -2,7 +2,6 @@ import argparse
 import os
 import torch
 from exp.exp_main import Exp_Main
-from exp.exp_main_SAN import Exp_Main_SAN
 import random
 import numpy as np
 
@@ -86,8 +85,9 @@ if __name__ == '__main__':
     parser.add_argument('--test_flop', action='store_true', default=False, help='See utils/tools for usage')
     
     # CDFM
-    parser.add_argument('--alpha', type=float, default=0.3, help='selected channel Ratio')
+    parser.add_argument('--alpha', type=float, default=1, help='selected channel Ratio')
     parser.add_argument('--init_type', type=int, default=0, help='gamma parameter initialization way')
+    parser.add_argument('--is_shifted', type=bool, help='is the channels distribution shifted. True 1 False 0')
 
 
     args = parser.parse_args()
@@ -104,10 +104,8 @@ if __name__ == '__main__':
     print('Args in experiment:')
     print(args)
 
-    if args.use_norm == 4: # MTSF: multivariate time series forecasting
-        Exp = Exp_Main_SAN
-    else:
-        Exp = Exp_Main
+
+    Exp = Exp_Main
 
     if args.is_training:
         for ii in range(args.itr):

@@ -2,7 +2,7 @@
 from pkgutil import get_data
 from data_provider.data_factory import data_provider
 from exp.exp_basic import Exp_Basic
-from models import CDFM, DLinear, PatchTST
+from models import CDFM
 from utils.tools import EarlyStopping, adjust_learning_rate, visual, test_params_flop
 from utils.metrics import metric
 import numpy as np
@@ -12,14 +12,11 @@ from torch import optim
 import os
 import time
 import warnings
-import matplotlib.pyplot as plt
-import torch.nn.functional as F
 from torch.optim import lr_scheduler 
-
-warnings.filterwarnings('ignore')
-
+import copy
 import random
 
+warnings.filterwarnings('ignore')
 def seed_everything(seed=2021):
     random.seed(seed)
     np.random.seed(seed)
@@ -32,8 +29,9 @@ def seed_everything(seed=2021):
 class Exp_Main(Exp_Basic):
     def __init__(self, args):
         super(Exp_Main, self).__init__(args) 
-
-    # SIN 
+        self.args.is_shifted = torch.ones((self.args.enc_in), dtype=torch.bool)
+        self.args.train_epochs = self.args.train_epochs + 1
+    # for SIN normalization
     def _get_U_V(self):
         train_data, train_loader = self._get_data('train')
         X = []
@@ -64,9 +62,10 @@ class Exp_Main(Exp_Basic):
         print("selected_U and V done!!")
         return selected_U, selected_V
     
-    def _get_deltH_train(self):
-
+    def _get_metric_G(self):
         train_data, train_loader = self._get_data(flag='train')
+
+        # Calculate the non-stationarity of channels
         all_sigma_t = []
         for data in train_loader:
             x = data[0]
@@ -76,23 +75,37 @@ class Exp_Main(Exp_Basic):
             all_sigma_t.append(sigma_t)
 
         all_sigma_t = torch.cat(all_sigma_t, dim=0)
-        mean_sigma_t = torch.mean(all_sigma_t, dim=0)
-        all_origin_x = torch.tensor(train_data.origin_data_x)
-        sigma_c = torch.std(all_origin_x, dim=0)
-        deltH_train = sigma_c * mean_sigma_t
-        # exit()
-        return deltH_train
-    
+        all_sigma_t = torch.mean(all_sigma_t, dim=0)
+        all_x = torch.tensor(train_data.origin_data_x)
+
+        # Remove outliers
+        mean = torch.mean(all_x, axis=0)
+        std = torch.std(all_x, axis=0)
+        all_x[all_x > mean + 2*std] = 0
+        all_x[all_x < mean - 2*std] = 0
+        mean = torch.mean(all_x, axis=0)
+        std = torch.std(all_x, axis=0)
+        all_x = (all_x - mean) / (std + 1e-5)
+
+        # Calculate correlation between channels
+        cov_matrix = torch.mm(all_x.t(), all_x) / (all_x.shape[0] - 1)
+
+        # Calculate metric G
+        G = torch.mean(cov_matrix, dim=-1) + all_sigma_t
+
+        print(G)
+        return G
+     
     def _build_model(self):
-        if self.args.use_norm == 3:
-            self.args.selected_U, self.args.selected_V = self._get_U_V()
-        self.args.deltH_train = self._get_deltH_train()     
+        # if self.args.use_norm == 3:
+        #     self.args.selected_U, self.args.selected_V = self._get_U_V()
+        self.args.G = self._get_metric_G()     
+        
         model_dict = {
             'CDFM': CDFM,
-            'PatchTST': PatchTST,
-            'DLinear': DLinear,
         }
         model = model_dict[self.args.model].Model(self.args).float()
+        self.initial_state_dict = copy.deepcopy(model.state_dict())
 
         if self.args.use_multi_gpu and self.args.use_gpu:
             model = nn.DataParallel(model, device_ids=self.args.device_ids)
@@ -115,21 +128,11 @@ class Exp_Main(Exp_Basic):
         self.criterion = nn.MSELoss()
         self.criterion_l1 = nn.L1Loss()
     
-    def get_stationary_y(self, y, k=20): 
-        xf = torch.fft.rfft(y, dim=1)
-        k_values = torch.topk(xf.abs(), k, dim = 1)  
-        indices = k_values.indices
 
-        mask = torch.zeros_like(xf)
-        mask.scatter_(1, indices, 1)
-        xf_filtered = xf * mask
-        stationary_y = torch.fft.irfft(xf_filtered, dim=1).real.float()
-        
-        return stationary_y
-    
-
-    def vali(self, vali_data, vali_loader, criterion, epoch):
+    def vali(self, vali_data, vali_loader, criterion, epoch, flag):
         total_loss = []
+        total_loss_s = []
+        total_loss_fused = []
         self.model.eval()
         with torch.no_grad():
             for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(vali_loader):
@@ -146,7 +149,7 @@ class Exp_Main(Exp_Basic):
                 if self.args.use_amp:
                     with torch.cuda.amp.autocast():
                         if 'CDFM' in self.args.model:
-                            outputs, outputs_w, outputs_wo, sigma_tpred = self.model(batch_x)
+                            outputs, outputs_s, outputs_ns = self.model(batch_x, self.args.is_shifted)
                         elif 'Linear' in self.args.model or 'TST' in self.args.model:
                             outputs = self.model(batch_x)
                         else:
@@ -156,8 +159,7 @@ class Exp_Main(Exp_Basic):
                                 outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
                 else:
                     if 'CDFM' in self.args.model:
-                        outputs, outputs_w, outputs_wo, sigma_tpred = self.model(batch_x)
-                        # outputs = self.model(batch_x)
+                        outputs, outputs_s, outputs_ns = self.model(batch_x, self.args.is_shifted)
                     elif 'Linear' in self.args.model or 'TST' in self.args.model:
                         outputs = self.model(batch_x)
                     else:
@@ -170,8 +172,30 @@ class Exp_Main(Exp_Basic):
                 batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
                 loss = criterion(outputs, batch_y) 
                 
+                if flag == 'val':
+                    loss_s = []
+                    loss_fused = []
+                    for i in range(self.args.enc_in):
+                        loss_s.append((self.criterion(outputs_s[:,:,i], batch_y[:,:,i])).item())
+                        loss_fused.append((self.criterion(outputs[:,:,i], batch_y[:,:,i])).item())
+                    loss_s = np.array(loss_s)
+                    loss_fused = np.array(loss_fused)
+                    total_loss_s.append(loss_s.reshape(1,-1))
+                    total_loss_fused.append(loss_fused.reshape(1,-1))
+
                 total_loss.append(loss.cpu().item())
         total_loss = np.average(total_loss)
+
+        if flag == 'val':
+            total_loss_s = np.concatenate(total_loss_s, axis=0)
+            total_loss_fused = np.concatenate(total_loss_fused, axis=0)
+            total_loss_s = np.mean(total_loss_s, axis=0)
+            total_loss_fused = np.mean(total_loss_fused, axis=0)
+    
+            threshold = 0.1*total_loss_s
+            is_shifted = (total_loss_fused >= total_loss_s + threshold) 
+            self.args.is_shifted = torch.tensor(is_shifted)
+
         self.model.train()
         return total_loss
 
@@ -204,6 +228,9 @@ class Exp_Main(Exp_Basic):
             seed_everything()
 
             self.model.train()
+            if epoch == 1:
+                self.model.load_state_dict(self.initial_state_dict) 
+
             epoch_time = time.time()
             for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(train_loader):
                 iter_count += 1
@@ -221,8 +248,7 @@ class Exp_Main(Exp_Basic):
                 if self.args.use_amp:
                     with torch.cuda.amp.autocast():
                         if 'CDFM' in self.args.model:
-                            outputs, outputs_w, outputs_wo, sigma_tpred = self.model(batch_x)
-                            # outputs = self.model(batch_x)
+                            outputs, outputs_s, outputs_ns = self.model(batch_x, self.args.is_shifted)
                         elif 'Linear' in self.args.model or 'TST' in self.args.model:
                             outputs = self.model(batch_x)
                         else:
@@ -238,8 +264,7 @@ class Exp_Main(Exp_Basic):
                         train_loss.append(loss.item())
                 else:
                     if 'CDFM' in self.args.model:
-                        outputs, outputs_w, outputs_wo, sigma_tpred = self.model(batch_x)
-                        # outputs = self.model(batch_x)
+                        outputs, outputs_s, outputs_ns = self.model(batch_x, self.args.is_shifted)
                     elif 'Linear' in self.args.model or 'TST' in self.args.model:
                         outputs = self.model(batch_x)
                     else:
@@ -251,12 +276,9 @@ class Exp_Main(Exp_Basic):
                     outputs = outputs[:, -self.args.pred_len:, f_dim:]
                     batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
 
-                    # true_tpred = torch.std(batch_y, dim=1)
-                    batch_y_s = self.get_stationary_y(batch_y)
 
                     loss = self.criterion(outputs, batch_y)
-                    loss += self.criterion(outputs_w, batch_y) + self.criterion(outputs_wo, batch_y) 
-                    # loss += self.criterion(sigma_tpred, true_tpred)
+                    loss += self.criterion(outputs_s, batch_y) + self.criterion(outputs_ns, batch_y) 
                     loss = loss.mean()
                     train_loss.append(loss.item())
 
@@ -284,8 +306,8 @@ class Exp_Main(Exp_Basic):
                     
             print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
             train_loss = np.average(train_loss)
-            vali_loss = self.vali(vali_data, vali_loader, self.criterion, epoch)
-            test_loss = self.vali(test_data, test_loader, self.criterion, epoch)
+            vali_loss = self.vali(vali_data, vali_loader, self.criterion, epoch, flag='val')
+            test_loss = self.vali(test_data, test_loader, self.criterion, epoch, flag='test')
 
             print(
                 "Backbone Epoch: {0}, Steps: {1} | Train Loss: {2:.7f} Vali Loss: {3:.7f} Test Loss: {4:.7f}".format(
@@ -336,8 +358,7 @@ class Exp_Main(Exp_Basic):
                 if self.args.use_amp:
                     with torch.cuda.amp.autocast():
                         if 'CDFM' in self.args.model:
-                            # outputs = self.model(batch_x)
-                            outputs, outputs_w, outputs_wo, sigma_tpred = self.model(batch_x)
+                            outputs, outputs_s, outputs_ns = self.model(batch_x, self.args.is_shifted)
                         elif 'Linear' in self.args.model or 'TST' in self.args.model:
                             outputs = self.model(batch_x)
                         else:
@@ -347,8 +368,7 @@ class Exp_Main(Exp_Basic):
                                 outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
                 else:
                     if 'CDFM' in self.args.model:
-                        outputs, outputs_w, outputs_wo, sigma_tpred = self.model(batch_x)
-                        # outputs = self.model(batch_x)
+                        outputs, outputs_s, outputs_ns = self.model(batch_x, self.args.is_shifted)
                     elif 'Linear' in self.args.model or 'TST' in self.args.model:
                         outputs = self.model(batch_x)
                     else:
@@ -387,10 +407,6 @@ class Exp_Main(Exp_Basic):
 
         mae, mse, rmse, mape, mspe, rse, corr = metric(preds, trues)
         print('mse:{}, mae:{}'.format(mse, mae))
-
-        for i in range(self.args.enc_in):
-            mae, mse, rmse, mape, mspe, rse, corr = metric(preds[:,:,i], trues[:,:,i])
-            print('i mse:{}, mae:{}'.format(i, mse, mae))
         
         f = open("result.txt", 'a')
         f.write(setting + "  \n")
@@ -429,7 +445,7 @@ class Exp_Main(Exp_Basic):
                 if self.args.use_amp:
                     with torch.cuda.amp.autocast():
                         if 'CDFM' in self.args.model:
-                            outputs, outputs_w, outputs_wo, sigma_tpred = self.model(batch_x)
+                            outputs, outputs_s, outputs_ns = self.model(batch_x, self.args.is_shifted)
                         elif 'Linear' in self.args.model or 'TST' in self.args.model:
                             outputs = self.model(batch_x)
                         else:
@@ -439,7 +455,7 @@ class Exp_Main(Exp_Basic):
                                 outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
                 else:
                     if 'CDFM' in self.args.model:
-                        outputs, outputs_w, outputs_wo, sigma_tpred = self.model(batch_x)
+                        outputs, outputs_s, outputs_ns = self.model(batch_x, self.args.is_shifted)
                     elif 'Linear' in self.args.model or 'TST' in self.args.model:
                         outputs = self.model(batch_x)
                     else:

@@ -9,7 +9,7 @@ root_path_name=./dataset/
 data_path_name=ETTh2.csv
 model_id_name=ETTh2
 data_name=ETTh2
-alpha=0.3
+alpha=0.7
 
 for pred_len in 96 192 336 720
 do
@@ -28,5 +28,5 @@ do
         --train_epochs 20\
         --patience 20\
         --alpha $alpha\
-        --itr 1 --batch_size 32 --learning_rate 0.005 >logs/$data_name'_'$seq_len'_'$pred_len.log
+        --itr 1 --batch_size 32 --learning_rate 0.005 >logs/$model_id_name'_'$seq_len'_'$pred_len.log
 done 
