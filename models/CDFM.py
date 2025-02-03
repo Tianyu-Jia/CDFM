@@ -89,6 +89,7 @@ class Model(nn.Module):
     def forward(self, x, is_shifted): 
         b,l,n = x.shape
 
+
         # stationary branch
         mean = torch.mean(x, dim=1, keepdim=True)
         std = torch.std(x, dim=1, keepdim=True)
@@ -113,7 +114,7 @@ class Model(nn.Module):
         # calculate the fusion weights 
         sigma_t = torch.std(x, dim=1)
         local_input = torch.cat([sigma_t.unsqueeze(1), x], dim=1)
-        sigma_tpred = self.Linear_Sigma_tpred(local_input.permute(0, 2, 1)).squeeze(2)   
+        sigma_tpred = self.Linear_Sigma_tpred(local_input.permute(0, 2, 1)).squeeze(2)  
         gamma = self.gamma.repeat(b, 1)   
         W = gamma* (sigma_t + sigma_tpred)
         W = W.unsqueeze(1).repeat(1, self.pred_len, 1)   
@@ -123,9 +124,11 @@ class Model(nn.Module):
         nonshifted_chs = torch.nonzero(~is_shifted).squeeze()
         common_mask = torch.isin(top_k_chs, nonshifted_chs)
         sel_chs = top_k_chs[common_mask]
-        sel_chs = torch.tensor(sel_chs).to(x.device)
         # print(sel_chs)
+        # print(is_shifted)
         # exit()
+
+        # sel_chs = [0, 2]
         sel_chs = torch.tensor(sel_chs).to(x.device)
         O = torch.ones_like(W).to(W.device)
         mask = torch.zeros([n]).to(x.device)
@@ -134,4 +137,5 @@ class Model(nn.Module):
         W = W * mask
         out = W * out_ns + (O - W) * out_s
         
-        return out, out_s, out_ns
+        return out, out_s, out_ns, sel_chs
+       

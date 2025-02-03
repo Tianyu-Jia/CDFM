@@ -29,8 +29,6 @@ def seed_everything(seed=2021):
 class Exp_Main(Exp_Basic):
     def __init__(self, args):
         super(Exp_Main, self).__init__(args) 
-        self.args.is_shifted = torch.ones((self.args.enc_in), dtype=torch.bool)
-        self.args.train_epochs = self.args.train_epochs + 1
     # for SIN normalization
     def _get_U_V(self):
         train_data, train_loader = self._get_data('train')
@@ -93,7 +91,7 @@ class Exp_Main(Exp_Basic):
         # Calculate metric G
         G = torch.mean(cov_matrix, dim=-1) + all_sigma_t
 
-        print(G)
+        # print(G)
         return G
      
     def _build_model(self):
@@ -105,8 +103,6 @@ class Exp_Main(Exp_Basic):
             'CDFM': CDFM,
         }
         model = model_dict[self.args.model].Model(self.args).float()
-        self.initial_state_dict = copy.deepcopy(model.state_dict())
-
         if self.args.use_multi_gpu and self.args.use_gpu:
             model = nn.DataParallel(model, device_ids=self.args.device_ids)
         
@@ -129,7 +125,7 @@ class Exp_Main(Exp_Basic):
         self.criterion_l1 = nn.L1Loss()
     
 
-    def vali(self, vali_data, vali_loader, criterion, epoch, flag):
+    def vali(self, vali_data, vali_loader, criterion, epoch, flag, is_selecting):
         total_loss = []
         total_loss_s = []
         total_loss_fused = []
@@ -149,7 +145,7 @@ class Exp_Main(Exp_Basic):
                 if self.args.use_amp:
                     with torch.cuda.amp.autocast():
                         if 'CDFM' in self.args.model:
-                            outputs, outputs_s, outputs_ns = self.model(batch_x, self.args.is_shifted)
+                            outputs, outputs_s, outputs_ns, sel_chs = self.model(batch_x, self.args.is_shifted)
                         elif 'Linear' in self.args.model or 'TST' in self.args.model:
                             outputs = self.model(batch_x)
                         else:
@@ -159,7 +155,7 @@ class Exp_Main(Exp_Basic):
                                 outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
                 else:
                     if 'CDFM' in self.args.model:
-                        outputs, outputs_s, outputs_ns = self.model(batch_x, self.args.is_shifted)
+                        outputs, outputs_s, outputs_ns, sel_chs = self.model(batch_x, self.args.is_shifted)
                     elif 'Linear' in self.args.model or 'TST' in self.args.model:
                         outputs = self.model(batch_x)
                     else:
@@ -172,7 +168,7 @@ class Exp_Main(Exp_Basic):
                 batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
                 loss = criterion(outputs, batch_y) 
                 
-                if flag == 'val':
+                if flag == 'val' and is_selecting == True:
                     loss_s = []
                     loss_fused = []
                     for i in range(self.args.enc_in):
@@ -186,20 +182,30 @@ class Exp_Main(Exp_Basic):
                 total_loss.append(loss.cpu().item())
         total_loss = np.average(total_loss)
 
-        if flag == 'val':
+        if flag == 'val' and is_selecting == True:
             total_loss_s = np.concatenate(total_loss_s, axis=0)
             total_loss_fused = np.concatenate(total_loss_fused, axis=0)
             total_loss_s = np.mean(total_loss_s, axis=0)
             total_loss_fused = np.mean(total_loss_fused, axis=0)
-    
+            # print(total_loss_s )
+            # print(total_loss_fused)
+            
+            
             threshold = 0.1*total_loss_s
             is_shifted = (total_loss_fused >= total_loss_s + threshold) 
             self.args.is_shifted = torch.tensor(is_shifted)
 
-        self.model.train()
-        return total_loss
+            # print(is_shifted)
 
-    def train(self, setting):
+        if epoch == self.args.pre_epochs and is_selecting == True:
+            return total_loss, self.args.is_shifted
+        
+
+        self.model.train()
+         
+        return total_loss, None
+
+    def train(self, setting, is_selecting=False):
         train_data, train_loader = self._get_data(flag='train')
         vali_data, vali_loader = self._get_data(flag='val')
         test_data, test_loader = self._get_data(flag='test')
@@ -228,8 +234,7 @@ class Exp_Main(Exp_Basic):
             seed_everything()
 
             self.model.train()
-            if epoch == 1:
-                self.model.load_state_dict(self.initial_state_dict) 
+            
 
             epoch_time = time.time()
             for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(train_loader):
@@ -248,7 +253,7 @@ class Exp_Main(Exp_Basic):
                 if self.args.use_amp:
                     with torch.cuda.amp.autocast():
                         if 'CDFM' in self.args.model:
-                            outputs, outputs_s, outputs_ns = self.model(batch_x, self.args.is_shifted)
+                            outputs, outputs_s, outputs_ns, sel_chs = self.model(batch_x, self.args.is_shifted)
                         elif 'Linear' in self.args.model or 'TST' in self.args.model:
                             outputs = self.model(batch_x)
                         else:
@@ -264,7 +269,7 @@ class Exp_Main(Exp_Basic):
                         train_loss.append(loss.item())
                 else:
                     if 'CDFM' in self.args.model:
-                        outputs, outputs_s, outputs_ns = self.model(batch_x, self.args.is_shifted)
+                        outputs, outputs_s, outputs_ns, sel_chs = self.model(batch_x, self.args.is_shifted)
                     elif 'Linear' in self.args.model or 'TST' in self.args.model:
                         outputs = self.model(batch_x)
                     else:
@@ -299,20 +304,21 @@ class Exp_Main(Exp_Basic):
                     loss.backward()
                     model_optim.step()
                     model_optim.zero_grad()
-                    
+   
                 if self.args.lradj == 'TST':
                     adjust_learning_rate(model_optim, scheduler, epoch + 1, self.args, printout=False)
                     scheduler.step()
                     
             print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
             train_loss = np.average(train_loss)
-            vali_loss = self.vali(vali_data, vali_loader, self.criterion, epoch, flag='val')
-            test_loss = self.vali(test_data, test_loader, self.criterion, epoch, flag='test')
+            vali_loss, is_shifted = self.vali(vali_data, vali_loader, self.criterion, epoch, flag='val', is_selecting=is_selecting)
+            test_loss = self.vali(test_data, test_loader, self.criterion, epoch, flag='test', is_selecting=is_selecting)[0]
 
             print(
                 "Backbone Epoch: {0}, Steps: {1} | Train Loss: {2:.7f} Vali Loss: {3:.7f} Test Loss: {4:.7f}".format(
                     epoch + 1, train_steps, train_loss, vali_loss, test_loss))
             early_stopping(vali_loss, self.model, path)
+            
             if early_stopping.early_stop:
                 print("Early stopping")
                 break 
@@ -322,11 +328,17 @@ class Exp_Main(Exp_Basic):
             else:
                 print('Updating learning rate to {}'.format(scheduler.get_last_lr()[0]))
 
+            
+            
+            best_model_path = path + '/' + 'checkpoint.pth'
+            # self.model.load_state_dict(torch.load(best_model_path, map_location='cuda:0'))
+            self.model.load_state_dict(torch.load(best_model_path, map_location=torch.device('cpu')))
 
-        best_model_path = path + '/' + 'checkpoint.pth'
-        # self.model.load_state_dict(torch.load(best_model_path, map_location='cuda:0'))
-        self.model.load_state_dict(torch.load(best_model_path, map_location=torch.device('cpu')))
-                                   
+            if epoch == self.args.pre_epochs and is_selecting == True:
+                return is_shifted 
+        
+            
+         
         return self.model
 
     def test(self, setting, test=0):
@@ -358,7 +370,7 @@ class Exp_Main(Exp_Basic):
                 if self.args.use_amp:
                     with torch.cuda.amp.autocast():
                         if 'CDFM' in self.args.model:
-                            outputs, outputs_s, outputs_ns = self.model(batch_x, self.args.is_shifted)
+                            outputs, outputs_s, outputs_ns, _ = self.model(batch_x, self.args.is_shifted)
                         elif 'Linear' in self.args.model or 'TST' in self.args.model:
                             outputs = self.model(batch_x)
                         else:
@@ -368,7 +380,7 @@ class Exp_Main(Exp_Basic):
                                 outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
                 else:
                     if 'CDFM' in self.args.model:
-                        outputs, outputs_s, outputs_ns = self.model(batch_x, self.args.is_shifted)
+                        outputs, outputs_s, outputs_ns, _ = self.model(batch_x, self.args.is_shifted)
                     elif 'Linear' in self.args.model or 'TST' in self.args.model:
                         outputs = self.model(batch_x)
                     else:
@@ -396,8 +408,8 @@ class Exp_Main(Exp_Basic):
         if self.args.test_flop:
             test_params_flop((batch_x.shape[1], batch_x.shape[2]))
             exit()
-        preds = np.array(preds)
-        trues = np.array(trues)
+        #preds = np.array(preds)
+        #trues = np.array(trues)
         preds = np.concatenate(preds, axis=0)
         trues = np.concatenate(trues, axis=0)
                     
@@ -445,7 +457,7 @@ class Exp_Main(Exp_Basic):
                 if self.args.use_amp:
                     with torch.cuda.amp.autocast():
                         if 'CDFM' in self.args.model:
-                            outputs, outputs_s, outputs_ns = self.model(batch_x, self.args.is_shifted)
+                            outputs, outputs_s, outputs_ns, _ = self.model(batch_x, self.args.is_shifted)
                         elif 'Linear' in self.args.model or 'TST' in self.args.model:
                             outputs = self.model(batch_x)
                         else:
@@ -455,7 +467,7 @@ class Exp_Main(Exp_Basic):
                                 outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
                 else:
                     if 'CDFM' in self.args.model:
-                        outputs, outputs_s, outputs_ns = self.model(batch_x, self.args.is_shifted)
+                        outputs, outputs_s, outputs_ns, _ = self.model(batch_x, self.args.is_shifted)
                     elif 'Linear' in self.args.model or 'TST' in self.args.model:
                         outputs = self.model(batch_x)
                     else:

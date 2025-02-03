@@ -88,7 +88,10 @@ if __name__ == '__main__':
     parser.add_argument('--alpha', type=float, default=1, help='selected channel Ratio')
     parser.add_argument('--init_type', type=int, default=0, help='gamma parameter initialization way')
     parser.add_argument('--is_shifted', type=bool, help='is the channels distribution shifted. True 1 False 0')
+    parser.add_argument('--pre_epochs', type=int, default=1, help='train epochs')
+    
 
+    
 
     args = parser.parse_args()
 
@@ -101,9 +104,10 @@ if __name__ == '__main__':
         args.device_ids = [int(id_) for id_ in device_ids]
         args.gpu = args.device_ids[0]
 
+    
+    args.sel_chs = None
     print('Args in experiment:')
     print(args)
-
 
     Exp = Exp_Main
 
@@ -130,6 +134,10 @@ if __name__ == '__main__':
 
             exp = Exp(args)  # set experiments
             print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
+            args.is_shifted = torch.zeros((args.enc_in), dtype=torch.bool)
+            args.is_shifted = exp.train(setting, True)
+            # print(args.is_shifted)
+            exp = Exp(args) 
             exp.train(setting)
 
             print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))

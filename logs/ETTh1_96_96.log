@@ -1,101 +1,112 @@
 Args in experiment:
-Namespace(activation='gelu', affine=0, alpha=0.3, batch_size=32, c_out=7, checkpoints='./checkpoints/', d_ff=2048, d_layers=1, d_model=512, data='ETTh1', data_path='ETTh1.csv', dec_in=7, decomposition=0, des='Exp', devices='0,1,2,3', distil=True, do_predict=False, dropout=0.05, e_layers=2, embed='timeF', embed_type=0, enc_in=7, factor=1, fc_dropout=0.05, features='M', freq='h', gpu=0, head_dropout=0.0, individual=0, init_type=0, is_shifted=None, is_training=1, itr=1, kernel_size=25, label_len=0, learning_rate=0.001, loss='mse', lradj='6', model='CDFM', model_id='CDFM_96_96', moving_avg=25, n_heads=8, num_workers=0, output_attention=False, padding_patch='end', patch_len=16, patience=10, pct_start=0.3, pred_len=96, revin=1, root_path='./dataset/', seq_len=96, stride=8, subtract_last=0, target='OT', test_flop=False, train_epochs=10, use_amp=False, use_gpu=False, use_multi_gpu=False)
+Namespace(activation='gelu', affine=0, alpha=0.3, batch_size=32, c_out=7, checkpoints='./checkpoints/', d_ff=2048, d_layers=1, d_model=512, data='ETTh1', data_path='ETTh1.csv', dec_in=7, decomposition=0, des='Exp', devices='0,1,2,3', distil=True, do_predict=False, dropout=0.05, e_layers=2, embed='timeF', embed_type=0, enc_in=7, factor=1, fc_dropout=0.05, features='M', freq='h', gpu=0, head_dropout=0.0, individual=0, init_type=0, is_shifted=None, is_training=1, itr=1, kernel_size=25, label_len=0, learning_rate=0.001, loss='mse', lradj='6', model='CDFM', model_id='CDFM_96_96', moving_avg=25, n_heads=8, num_workers=0, output_attention=False, padding_patch='end', patch_len=16, patience=10, pct_start=0.3, pre_epochs=1, pred_len=96, revin=1, root_path='./dataset/', sel_chs=None, seq_len=96, stride=8, subtract_last=0, target='OT', test_flop=False, train_epochs=10, use_amp=False, use_gpu=False, use_multi_gpu=False)
 Use CPU
 train 8449
-tensor([1.1388, 0.9854, 1.1173, 0.8912, 0.9996, 0.7299, 0.6484],
-       dtype=torch.float64)
 >>>>>>>start training : CDFM_96_96_CDFM_ETTh1_ftM_sl96_ll0_pl96_dm512_nh8_el2_dl1_df2048_fc1_ebtimeF_dtTrue_Exp_0>>>>>>>>>>>>>>>>>>>>>>>>>>
 train 8449
 val 2785
 test 2785
-	iters: 100, epoch: 1 | loss: 1.2505707
-	speed: 0.0080s/iter; left time: 22.3511s
-	iters: 200, epoch: 1 | loss: 1.2058505
-	speed: 0.0077s/iter; left time: 20.9506s
-Epoch: 1 cost time: 2.0436134338378906
-Backbone Epoch: 1, Steps: 264 | Train Loss: 1.4303083 Vali Loss: 0.8587882 Test Loss: 0.5038589
-Validation loss decreased (inf --> 0.858788).  Saving model ...
+	iters: 100, epoch: 1 | loss: 1.2505622
+	speed: 0.0083s/iter; left time: 21.0289s
+	iters: 200, epoch: 1 | loss: 1.2058369
+	speed: 0.0075s/iter; left time: 18.3026s
+Epoch: 1 cost time: 2.1618213653564453
+Backbone Epoch: 1, Steps: 264 | Train Loss: 1.4302975 Vali Loss: 0.8588062 Test Loss: 0.5038591
+Validation loss decreased (inf --> 0.858806).  Saving model ...
 Updating learning rate to 0.001
-	iters: 100, epoch: 2 | loss: 0.9250118
-	speed: 0.0176s/iter; left time: 44.7334s
-	iters: 200, epoch: 2 | loss: 1.0024005
-	speed: 0.0072s/iter; left time: 17.6776s
-Epoch: 2 cost time: 1.873668909072876
-Backbone Epoch: 2, Steps: 264 | Train Loss: 1.1219060 Vali Loss: 0.6970919 Test Loss: 0.3866437
-Validation loss decreased (0.858788 --> 0.697092).  Saving model ...
+	iters: 100, epoch: 2 | loss: 0.9178290
+	speed: 0.0210s/iter; left time: 47.7033s
+	iters: 200, epoch: 2 | loss: 1.0028036
+	speed: 0.0072s/iter; left time: 15.6584s
+Epoch: 2 cost time: 2.021278142929077
+Backbone Epoch: 2, Steps: 264 | Train Loss: 1.1043737 Vali Loss: 0.6983649 Test Loss: 0.3871847
+Validation loss decreased (0.858806 --> 0.698365).  Saving model ...
 Updating learning rate to 0.001
-	iters: 100, epoch: 3 | loss: 0.8882990
-	speed: 0.0178s/iter; left time: 40.6212s
-	iters: 200, epoch: 3 | loss: 0.9863698
-	speed: 0.0080s/iter; left time: 17.4475s
-Epoch: 3 cost time: 2.0507583618164062
-Backbone Epoch: 3, Steps: 264 | Train Loss: 1.0697176 Vali Loss: 0.6933645 Test Loss: 0.3821620
-Validation loss decreased (0.697092 --> 0.693365).  Saving model ...
+Use CPU
+train 8449
+train 8449
+val 2785
+test 2785
+	iters: 100, epoch: 1 | loss: 1.2505631
+	speed: 0.0090s/iter; left time: 22.7573s
+	iters: 200, epoch: 1 | loss: 1.2058393
+	speed: 0.0092s/iter; left time: 22.5237s
+Epoch: 1 cost time: 2.3742494583129883
+Backbone Epoch: 1, Steps: 264 | Train Loss: 1.4302990 Vali Loss: 0.8588000 Test Loss: 0.5038557
+Validation loss decreased (inf --> 0.858800).  Saving model ...
 Updating learning rate to 0.001
-	iters: 100, epoch: 4 | loss: 0.8824896
-	speed: 0.0204s/iter; left time: 40.9772s
-	iters: 200, epoch: 4 | loss: 0.9819470
-	speed: 0.0086s/iter; left time: 16.4075s
-Epoch: 4 cost time: 2.18831729888916
-Backbone Epoch: 4, Steps: 264 | Train Loss: 1.0637931 Vali Loss: 0.6928591 Test Loss: 0.3800385
-Validation loss decreased (0.693365 --> 0.692859).  Saving model ...
+	iters: 100, epoch: 2 | loss: 0.9178648
+	speed: 0.0202s/iter; left time: 46.0257s
+	iters: 200, epoch: 2 | loss: 1.0028824
+	speed: 0.0083s/iter; left time: 18.0441s
+Epoch: 2 cost time: 2.1318745613098145
+Backbone Epoch: 2, Steps: 264 | Train Loss: 1.1044109 Vali Loss: 0.6985373 Test Loss: 0.3872589
+Validation loss decreased (0.858800 --> 0.698537).  Saving model ...
 Updating learning rate to 0.001
-	iters: 100, epoch: 5 | loss: 0.8804213
-	speed: 0.0191s/iter; left time: 33.4386s
-	iters: 200, epoch: 5 | loss: 0.9799629
-	speed: 0.0085s/iter; left time: 13.9383s
-Epoch: 5 cost time: 2.203585624694824
-Backbone Epoch: 5, Steps: 264 | Train Loss: 1.0616310 Vali Loss: 0.6926973 Test Loss: 0.3787085
-Validation loss decreased (0.692859 --> 0.692697).  Saving model ...
+	iters: 100, epoch: 3 | loss: 0.8884938
+	speed: 0.0190s/iter; left time: 38.2061s
+	iters: 200, epoch: 3 | loss: 0.9865400
+	speed: 0.0078s/iter; left time: 14.9769s
+Epoch: 3 cost time: 2.1118814945220947
+Backbone Epoch: 3, Steps: 264 | Train Loss: 1.0695854 Vali Loss: 0.6936918 Test Loss: 0.3823745
+Validation loss decreased (0.698537 --> 0.693692).  Saving model ...
+Updating learning rate to 0.001
+	iters: 100, epoch: 4 | loss: 0.8825809
+	speed: 0.0197s/iter; left time: 34.3682s
+	iters: 200, epoch: 4 | loss: 0.9820340
+	speed: 0.0082s/iter; left time: 13.4679s
+Epoch: 4 cost time: 2.1715800762176514
+Backbone Epoch: 4, Steps: 264 | Train Loss: 1.0637841 Vali Loss: 0.6930440 Test Loss: 0.3802791
+Validation loss decreased (0.693692 --> 0.693044).  Saving model ...
+Updating learning rate to 0.001
+	iters: 100, epoch: 5 | loss: 0.8806118
+	speed: 0.0194s/iter; left time: 28.7851s
+	iters: 200, epoch: 5 | loss: 0.9800693
+	speed: 0.0088s/iter; left time: 12.1956s
+Epoch: 5 cost time: 2.256113052368164
+Backbone Epoch: 5, Steps: 264 | Train Loss: 1.0616958 Vali Loss: 0.6928371 Test Loss: 0.3788934
+Validation loss decreased (0.693044 --> 0.692837).  Saving model ...
 Updating learning rate to 0.0001
-	iters: 100, epoch: 6 | loss: 0.8664135
-	speed: 0.0196s/iter; left time: 29.1632s
-	iters: 200, epoch: 6 | loss: 0.9748886
-	speed: 0.0075s/iter; left time: 10.4554s
-Epoch: 6 cost time: 2.0795681476593018
-Backbone Epoch: 6, Steps: 264 | Train Loss: 1.0523483 Vali Loss: 0.6902841 Test Loss: 0.3751081
-Validation loss decreased (0.692697 --> 0.690284).  Saving model ...
+	iters: 100, epoch: 6 | loss: 0.8662156
+	speed: 0.0211s/iter; left time: 25.7224s
+	iters: 200, epoch: 6 | loss: 0.9749874
+	speed: 0.0081s/iter; left time: 9.1328s
+Epoch: 6 cost time: 2.1736514568328857
+Backbone Epoch: 6, Steps: 264 | Train Loss: 1.0523180 Vali Loss: 0.6903164 Test Loss: 0.3751079
+Validation loss decreased (0.692837 --> 0.690316).  Saving model ...
 Updating learning rate to 0.0001
-	iters: 100, epoch: 7 | loss: 0.8663781
-	speed: 0.0211s/iter; left time: 25.8041s
-	iters: 200, epoch: 7 | loss: 0.9739707
-	speed: 0.0074s/iter; left time: 8.3424s
-Epoch: 7 cost time: 2.0901269912719727
-Backbone Epoch: 7, Steps: 264 | Train Loss: 1.0509526 Vali Loss: 0.6898458 Test Loss: 0.3748322
-Validation loss decreased (0.690284 --> 0.689846).  Saving model ...
+	iters: 100, epoch: 7 | loss: 0.8662058
+	speed: 0.0172s/iter; left time: 16.4810s
+	iters: 200, epoch: 7 | loss: 0.9740341
+	speed: 0.0076s/iter; left time: 6.4965s
+Epoch: 7 cost time: 1.940697431564331
+Backbone Epoch: 7, Steps: 264 | Train Loss: 1.0508975 Vali Loss: 0.6898714 Test Loss: 0.3748198
+Validation loss decreased (0.690316 --> 0.689871).  Saving model ...
 Updating learning rate to 0.0001
-	iters: 100, epoch: 8 | loss: 0.8662750
-	speed: 0.0209s/iter; left time: 19.9992s
-	iters: 200, epoch: 8 | loss: 0.9738653
-	speed: 0.0080s/iter; left time: 6.8550s
-Epoch: 8 cost time: 2.1376800537109375
-Backbone Epoch: 8, Steps: 264 | Train Loss: 1.0506245 Vali Loss: 0.6896570 Test Loss: 0.3745806
-Validation loss decreased (0.689846 --> 0.689657).  Saving model ...
+	iters: 100, epoch: 8 | loss: 0.8660955
+	speed: 0.0181s/iter; left time: 12.5761s
+	iters: 200, epoch: 8 | loss: 0.9739195
+	speed: 0.0085s/iter; left time: 5.0185s
+Epoch: 8 cost time: 2.090919256210327
+Backbone Epoch: 8, Steps: 264 | Train Loss: 1.0505667 Vali Loss: 0.6896756 Test Loss: 0.3745616
+Validation loss decreased (0.689871 --> 0.689676).  Saving model ...
 Updating learning rate to 0.0001
-	iters: 100, epoch: 9 | loss: 0.8661699
-	speed: 0.0207s/iter; left time: 14.3508s
-	iters: 200, epoch: 9 | loss: 0.9738746
-	speed: 0.0077s/iter; left time: 4.5587s
-Epoch: 9 cost time: 2.0970168113708496
-Backbone Epoch: 9, Steps: 264 | Train Loss: 1.0504180 Vali Loss: 0.6895471 Test Loss: 0.3743555
-Validation loss decreased (0.689657 --> 0.689547).  Saving model ...
+	iters: 100, epoch: 9 | loss: 0.8659866
+	speed: 0.0187s/iter; left time: 8.0167s
+	iters: 200, epoch: 9 | loss: 0.9739238
+	speed: 0.0075s/iter; left time: 2.4609s
+Epoch: 9 cost time: 2.0580928325653076
+Backbone Epoch: 9, Steps: 264 | Train Loss: 1.0503596 Vali Loss: 0.6895603 Test Loss: 0.3743338
+Validation loss decreased (0.689676 --> 0.689560).  Saving model ...
 Updating learning rate to 0.0001
-	iters: 100, epoch: 10 | loss: 0.8660486
-	speed: 0.0194s/iter; left time: 8.3229s
-	iters: 200, epoch: 10 | loss: 0.9738805
-	speed: 0.0072s/iter; left time: 2.3731s
-Epoch: 10 cost time: 1.984342336654663
-Backbone Epoch: 10, Steps: 264 | Train Loss: 1.0502548 Vali Loss: 0.6894720 Test Loss: 0.3741567
-Validation loss decreased (0.689547 --> 0.689472).  Saving model ...
-Updating learning rate to 0.0001
-	iters: 100, epoch: 11 | loss: 0.8659209
-	speed: 0.0202s/iter; left time: 3.3262s
-	iters: 200, epoch: 11 | loss: 0.9738621
-	speed: 0.0078s/iter; left time: 0.5055s
-Epoch: 11 cost time: 2.0860486030578613
-Backbone Epoch: 11, Steps: 264 | Train Loss: 1.0501141 Vali Loss: 0.6894149 Test Loss: 0.3739818
-Validation loss decreased (0.689472 --> 0.689415).  Saving model ...
+	iters: 100, epoch: 10 | loss: 0.8658648
+	speed: 0.0193s/iter; left time: 3.1887s
+	iters: 200, epoch: 10 | loss: 0.9739274
+	speed: 0.0086s/iter; left time: 0.5613s
+Epoch: 10 cost time: 2.1506385803222656
+Backbone Epoch: 10, Steps: 264 | Train Loss: 1.0501971 Vali Loss: 0.6894808 Test Loss: 0.3741347
+Validation loss decreased (0.689560 --> 0.689481).  Saving model ...
 Updating learning rate to 0.0001
 >>>>>>>testing : CDFM_96_96_CDFM_ETTh1_ftM_sl96_ll0_pl96_dm512_nh8_el2_dl1_df2048_fc1_ebtimeF_dtTrue_Exp_0<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 test 2785
-mse:0.3737013638019562, mae:0.3894583284854889
+mse:0.37386035919189453, mae:0.3894641697406769
