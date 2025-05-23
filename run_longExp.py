@@ -89,7 +89,7 @@ if __name__ == '__main__':
     parser.add_argument('--init_type', type=int, default=0, help='gamma parameter initialization way')
     parser.add_argument('--is_shifted', type=bool, help='is the channels distribution shifted. True 1 False 0')
     parser.add_argument('--pre_epochs', type=int, default=1, help='train epochs')
-    
+    parser.add_argument('--model_type', type=str, default='linear', help='stationary model type, options: [linear, mlp]')
 
     
 
@@ -137,6 +137,8 @@ if __name__ == '__main__':
             args.is_shifted = torch.zeros((args.enc_in), dtype=torch.bool)
             args.is_shifted = exp.train(setting, True)
             # print(args.is_shifted)
+            print(torch.nonzero(args.is_shifted)+1)
+            # exit()
             exp = Exp(args) 
             exp.train(setting)
 

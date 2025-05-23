@@ -2,7 +2,7 @@ if [ ! -d "./logs" ]; then
     mkdir ./logs
 fi
 
-seq_len=96
+seq_len=512
 model_name=CDFM
 
 root_path_name=./dataset/

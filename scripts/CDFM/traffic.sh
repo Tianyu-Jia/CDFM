@@ -2,12 +2,12 @@ if [ ! -d "./logs" ]; then
     mkdir ./logs
 fi
 
-seq_len=96
+seq_len=512
 model_name=CDFM
 
 root_path_name=./dataset/
-data_path_name=exchange_rate.csv
-model_id_name=exchange_rate
+data_path_name=traffic.csv
+model_id_name=traffic
 data_name=custom
 alpha=1
 
@@ -23,11 +23,15 @@ do
         --features M \
         --seq_len $seq_len \
         --pred_len $pred_len \
-        --enc_in 8 \
+        --enc_in 862 \
         --des 'Exp' \
-        --train_epochs 10\
+        --train_epochs 30\
         --patience 10\
-        --init_type 1\
         --alpha $alpha\
-        --itr 1 --batch_size 32 --learning_rate 0.0005 >logs/$model_id_name'_'$seq_len'_'$pred_len.log
+        --model_type 'mlp'\
+        --d_model 1024\
+        --itr 1 --batch_size 64 --learning_rate 0.001 >logs/$model_id_name'_'$seq_len'_'$pred_len.log
 done 
+
+
+

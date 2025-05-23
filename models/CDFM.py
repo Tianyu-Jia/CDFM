@@ -60,15 +60,29 @@ class Model(nn.Module):
         self.alpha = configs.alpha
         self.init_type = configs.init_type
         self.decomp_module = series_decomp(configs.kernel_size)
+        self.model_type = configs.model_type
+        self.d_model = configs.d_model
 
-        self.Linear_Seasonal_s = nn.Linear(self.seq_len, self.pred_len)
-        self.Linear_Trend_s = nn.Linear(self.seq_len, self.pred_len)
-        # Initialize parameters
-        self.Linear_Seasonal_s.weight = nn.Parameter((1/self.seq_len)*torch.ones([self.pred_len,self.seq_len]))
-        self.Linear_Seasonal_s.bias = nn.Parameter(torch.zeros([self.pred_len]))
-        self.Linear_Trend_s.weight = nn.Parameter((1/self.seq_len)*torch.ones([self.pred_len,self.seq_len]))
-        self.Linear_Trend_s.bias = nn.Parameter(torch.zeros([self.pred_len]))
-        
+        if self.model_type == 'linear':
+            self.Linear_Seasonal_s = nn.Linear(self.seq_len, self.pred_len)
+            self.Linear_Trend_s = nn.Linear(self.seq_len, self.pred_len)
+            # Initialize parameters
+            self.Linear_Seasonal_s.weight = nn.Parameter((1/self.seq_len)*torch.ones([self.pred_len,self.seq_len]))
+            self.Linear_Seasonal_s.bias = nn.Parameter(torch.zeros([self.pred_len]))
+            self.Linear_Trend_s.weight = nn.Parameter((1/self.seq_len)*torch.ones([self.pred_len,self.seq_len]))
+            self.Linear_Trend_s.bias = nn.Parameter(torch.zeros([self.pred_len]))
+        elif self.model_type == 'mlp':
+            self.Linear_Seasonal_s = nn.Sequential(
+                nn.Linear(self.seq_len, self.d_model),
+                nn.ReLU(),
+                nn.Linear(self.d_model, self.pred_len)
+            )
+            self.Linear_Trend_s = nn.Sequential(
+                nn.Linear(self.seq_len, self.d_model),
+                nn.ReLU(),
+                nn.Linear(self.d_model, self.pred_len)
+            )
+
         self.Linear_Seasonal_ns = nn.Linear(self.seq_len, self.pred_len)
         self.Linear_Trend_ns = nn.Linear(self.seq_len, self.pred_len)
         # Initialize parameters
@@ -88,7 +102,6 @@ class Model(nn.Module):
         
     def forward(self, x, is_shifted): 
         b,l,n = x.shape
-
 
         # stationary branch
         mean = torch.mean(x, dim=1, keepdim=True)
@@ -120,15 +133,17 @@ class Model(nn.Module):
         W = W.unsqueeze(1).repeat(1, self.pred_len, 1)   
 
         # fuse predictions 
+
         top_k_chs= self.G.topk(int(self.G.shape[0]*self.alpha)).indices
         nonshifted_chs = torch.nonzero(~is_shifted).squeeze()
         common_mask = torch.isin(top_k_chs, nonshifted_chs)
         sel_chs = top_k_chs[common_mask]
+
         # print(sel_chs)
         # print(is_shifted)
         # exit()
 
-        # sel_chs = [0, 2]
+        # sel_chs = [0, 1, 2, 3, 4, 5, 6]
         sel_chs = torch.tensor(sel_chs).to(x.device)
         O = torch.ones_like(W).to(W.device)
         mask = torch.zeros([n]).to(x.device)

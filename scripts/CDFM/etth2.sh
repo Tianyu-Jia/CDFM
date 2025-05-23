@@ -2,7 +2,6 @@ if [ ! -d "./logs" ]; then
     mkdir ./logs
 fi
 
-seq_len=96
 model_name=CDFM
 
 root_path_name=./dataset/
@@ -11,6 +10,7 @@ model_id_name=ETTh2
 data_name=ETTh2
 alpha=0.7
 
+seq_len=512
 pred_len=96
 python -u run_longExp.py \
     --is_training 1 \
@@ -27,9 +27,9 @@ python -u run_longExp.py \
     --train_epochs 20\
     --patience 10\
     --alpha $alpha\
-    --itr 1 --batch_size 32 --learning_rate 0.005 >logs/$model_id_name'_'$seq_len'_'$pred_len.log
+    --itr 1 --batch_size 32 --learning_rate 0.0005  >logs/$model_id_name'_'$seq_len'_'$pred_len.log
 
-
+seq_len=336
 pred_len=192
 python -u run_longExp.py \
     --is_training 1 \
@@ -48,7 +48,7 @@ python -u run_longExp.py \
     --alpha $alpha\
     --itr 1 --batch_size 32 --learning_rate 0.001 >logs/$model_id_name'_'$seq_len'_'$pred_len.log
 
-
+seq_len=336
 pred_len=336
 python -u run_longExp.py \
     --is_training 1 \
@@ -67,7 +67,7 @@ python -u run_longExp.py \
     --alpha $alpha\
     --itr 1 --batch_size 32 --learning_rate 0.005 >logs/$model_id_name'_'$seq_len'_'$pred_len.log
 
-
+seq_len=96
 pred_len=720
 python -u run_longExp.py \
     --is_training 1 \

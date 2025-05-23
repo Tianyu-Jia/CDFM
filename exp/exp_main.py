@@ -29,6 +29,7 @@ def seed_everything(seed=2021):
 class Exp_Main(Exp_Basic):
     def __init__(self, args):
         super(Exp_Main, self).__init__(args) 
+
     # for SIN normalization
     def _get_U_V(self):
         train_data, train_loader = self._get_data('train')
@@ -90,7 +91,6 @@ class Exp_Main(Exp_Basic):
 
         # Calculate metric G
         G = torch.mean(cov_matrix, dim=-1) + all_sigma_t
-
         # print(G)
         return G
      
@@ -107,9 +107,10 @@ class Exp_Main(Exp_Basic):
             model = nn.DataParallel(model, device_ids=self.args.device_ids)
         
         # calculate memory usage
-        # total = sum([param.nelement() for param in model.parameters()])
-        # total += sum(p.numel() for p in model.buffers())
-        # print("Number of parameters: %.2fM" % (total/(1024*1024))) 
+        total = sum([param.nelement() for param in model.parameters()])
+        total += sum(p.numel() for p in model.buffers())
+        print("Number of parameters: %.2fM" % (total/(1024*1024))) 
+        # exit()
         return model
 
     def _get_data(self, flag):
@@ -150,9 +151,9 @@ class Exp_Main(Exp_Basic):
                             outputs = self.model(batch_x)
                         else:
                             if self.args.output_attention:
-                                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
+                                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark, self.args.is_shifted)[0]
                             else:
-                                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+                                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark, self.args.is_shifted)
                 else:
                     if 'CDFM' in self.args.model:
                         outputs, outputs_s, outputs_ns, sel_chs = self.model(batch_x, self.args.is_shifted)
@@ -160,9 +161,9 @@ class Exp_Main(Exp_Basic):
                         outputs = self.model(batch_x)
                     else:
                         if self.args.output_attention:
-                            outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
+                            outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark, self.args.is_shifted)[0]
                         else:
-                            outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+                            outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark, self.args.is_shifted)
                 f_dim = -1 if self.args.features == 'MS' else 0
                 outputs = outputs[:, -self.args.pred_len:, f_dim:]
                 batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
@@ -258,9 +259,9 @@ class Exp_Main(Exp_Basic):
                             outputs = self.model(batch_x)
                         else:
                             if self.args.output_attention:
-                                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
+                                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark, self.args.is_shifted)[0]
                             else:
-                                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+                                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark, self.args.is_shifted)
 
                         f_dim = -1 if self.args.features == 'MS' else 0
                         outputs = outputs[:, -self.args.pred_len:, f_dim:]
@@ -274,9 +275,9 @@ class Exp_Main(Exp_Basic):
                         outputs = self.model(batch_x)
                     else:
                         if self.args.output_attention:
-                            outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
+                            outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark, self.args.is_shifted)[0]
                         else:
-                            outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+                            outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark, self.args.is_shifted)
                     f_dim = -1 if self.args.features == 'MS' else 0
                     outputs = outputs[:, -self.args.pred_len:, f_dim:]
                     batch_y = batch_y[:, -self.args.pred_len:, f_dim:].to(self.device)
@@ -328,17 +329,13 @@ class Exp_Main(Exp_Basic):
             else:
                 print('Updating learning rate to {}'.format(scheduler.get_last_lr()[0]))
 
-            
-            
-            best_model_path = path + '/' + 'checkpoint.pth'
-            # self.model.load_state_dict(torch.load(best_model_path, map_location='cuda:0'))
-            self.model.load_state_dict(torch.load(best_model_path, map_location=torch.device('cpu')))
 
             if epoch == self.args.pre_epochs and is_selecting == True:
                 return is_shifted 
         
-            
-         
+        best_model_path = path + '/' + 'checkpoint.pth'
+        self.model.load_state_dict(torch.load(best_model_path))
+        
         return self.model
 
     def test(self, setting, test=0):
@@ -375,9 +372,9 @@ class Exp_Main(Exp_Basic):
                             outputs = self.model(batch_x)
                         else:
                             if self.args.output_attention:
-                                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
+                                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark, self.args.is_shifted)[0]
                             else:
-                                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+                                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark, self.args.is_shifted)
                 else:
                     if 'CDFM' in self.args.model:
                         outputs, outputs_s, outputs_ns, _ = self.model(batch_x, self.args.is_shifted)
@@ -385,9 +382,9 @@ class Exp_Main(Exp_Basic):
                         outputs = self.model(batch_x)
                     else:
                         if self.args.output_attention:
-                            outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
+                            outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark, self.args.is_shifted)[0]
                         else:
-                            outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+                            outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark, self.args.is_shifted)
 
                 f_dim = -1 if self.args.features == 'MS' else 0
                 outputs = outputs[:, -self.args.pred_len:, f_dim:]
@@ -408,14 +405,16 @@ class Exp_Main(Exp_Basic):
         if self.args.test_flop:
             test_params_flop((batch_x.shape[1], batch_x.shape[2]))
             exit()
-        #preds = np.array(preds)
-        #trues = np.array(trues)
         preds = np.concatenate(preds, axis=0)
         trues = np.concatenate(trues, axis=0)
                     
         folder_path = './results/' + setting + '/'
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
+
+        # for i in range(self.args.enc_in):
+        #     mae, mse, rmse, mape, mspe, rse, corr = metric(preds[:,:,i], trues[:,:,i])
+        #     print('mse:{}, mae:{}'.format(mse, mae))
 
         mae, mse, rmse, mape, mspe, rse, corr = metric(preds, trues)
         print('mse:{}, mae:{}'.format(mse, mae))
@@ -462,9 +461,9 @@ class Exp_Main(Exp_Basic):
                             outputs = self.model(batch_x)
                         else:
                             if self.args.output_attention:
-                                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
+                                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark, self.args.is_shifted)[0]
                             else:
-                                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+                                outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark, self.args.is_shifted)
                 else:
                     if 'CDFM' in self.args.model:
                         outputs, outputs_s, outputs_ns, _ = self.model(batch_x, self.args.is_shifted)
@@ -472,9 +471,9 @@ class Exp_Main(Exp_Basic):
                         outputs = self.model(batch_x)
                     else:
                         if self.args.output_attention:
-                            outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)[0]
+                            outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark, self.args.is_shifted)[0]
                         else:
-                            outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark)
+                            outputs = self.model(batch_x, batch_x_mark, dec_inp, batch_y_mark, self.args.is_shifted)
                 pred = outputs.detach().cpu().numpy()  # .squeeze()
                 preds.append(pred)
 

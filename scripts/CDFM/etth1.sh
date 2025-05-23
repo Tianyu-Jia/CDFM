@@ -3,7 +3,6 @@ if [ ! -d "./logs" ]; then
     mkdir ./logs
 fi
 
-seq_len=96 
 model_name=CDFM
 
 root_path_name=./dataset/
@@ -13,6 +12,7 @@ data_name=ETTh1
 alpha=0.3
 
 
+seq_len=336
 pred_len=96
 python -u run_longExp.py \
     --is_training 1 \
@@ -31,7 +31,7 @@ python -u run_longExp.py \
     --alpha $alpha\
     --itr 1 --batch_size 32 --learning_rate 0.001 >logs/$model_id_name'_'$seq_len'_'$pred_len.log
 
-
+seq_len=336
 pred_len=192
 python -u run_longExp.py \
     --is_training 1 \
@@ -50,7 +50,7 @@ python -u run_longExp.py \
     --alpha $alpha\
     --itr 1 --batch_size 32 --learning_rate 0.001 >logs/$model_id_name'_'$seq_len'_'$pred_len.log
 
-
+seq_len=512
 pred_len=336
 python -u run_longExp.py \
     --is_training 1 \
@@ -67,10 +67,10 @@ python -u run_longExp.py \
     --train_epochs 10\
     --patience 10\
     --alpha $alpha\
-    --itr 1 --batch_size 32 --learning_rate 0.001 >logs/$model_id_name'_'$seq_len'_'$pred_len.log
+    --itr 1 --batch_size 64 --learning_rate 0.0001 >logs/$model_id_name'_'$seq_len'_'$pred_len.log
 
 
-
+seq_len=336
 pred_len=720
 python -u run_longExp.py \
     --is_training 1 \
@@ -88,3 +88,11 @@ python -u run_longExp.py \
     --patience 10\
     --alpha $alpha\
     --itr 1 --batch_size 32 --learning_rate 0.001 >logs/$model_id_name'_'$seq_len'_'$pred_len.log
+
+
+
+
+
+
+
+
